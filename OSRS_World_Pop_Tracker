@@ -1,75 +1,80 @@
 import urllib.request
 import time
+import string
 
 worldDict = {}
 
 
+class Del:  # needed to remove trash from pop_num later on
+            # http://stackoverflow.com/questions/1450897/python-removing-characters-except-digits-from-string
+    def __init__(self, keep=string.digits):
+        self.comp = dict((ord(c), c) for c in keep)
+
+    def __getitem__(self, k):
+        return self.comp.get(k)
+
+
+DD = Del()
+
+
 def main():
 
-    my_url = urllib.request.urlopen("http://oldschool.runescape.com/slu?order=WmpLA")
-    my_bytes = my_url.read()
-
-    my_str = my_bytes.decode("utf8")
-    my_url.close()
+    my_str = get_html()
 
     goto_worlds = my_str.find("<tbody class='server-list__body'>")
 
     go_through_worlds(goto_worlds)
 
+    iteration = 0
+
     try:
-        while True:
+        while True:  # main loop
 
             get_pops(goto_worlds)
 
-            for keys in sorted(worldDict.keys()):
-                print(str(keys) + " | Pop: " + str(worldDict[keys]))
+            add_pops(iteration)
 
-            time.sleep(15)
+            time.sleep(60)
+
+            iteration += 1
 
     except KeyboardInterrupt:
         pass
 
 
-def go_through_worlds(last_position):
+def go_through_worlds(last_position):  # gets world numbers from the html sheet, makes them keys in worldDict
 
-    my_url = urllib.request.urlopen("http://oldschool.runescape.com/slu?order=WmpLA")
-    my_bytes = my_url.read()
-
-    my_str = my_bytes.decode("utf8")
-    my_url.close()
+    my_str = get_html()
 
     while my_str.find("world=", last_position) != -1:
-
         pos = my_str.find("world=", last_position)
-        world_num = int(my_str[pos+6:pos+9])
+        world_num = int(my_str[pos + 6:pos + 9])
         worldDict[world_num] = []
         last_position = pos + 10
 
     return worldDict
 
 
-def get_pops(last_position):
+def get_pops(last_position):  # gets population numbers from the html sheet, makes them values in the list of worldDict
 
-    my_url = urllib.request.urlopen("http://oldschool.runescape.com/slu?order=WmpLA")
-    my_bytes = my_url.read()
+    my_str = get_html()
 
-    my_str = my_bytes.decode("utf8")
-    my_url.close()
-
-    while my_str.find(" players", last_position) != -1:
+    while my_str.find("world=", last_position) != -1:
 
         for keys in sorted(worldDict.keys()):
 
-            pos = my_str.find(" players", last_position)
-            pop_num = my_str[pos - 4:pos]
+            pos = my_str.find("world=" + str(keys), last_position)
+            pop_num = my_str[pos + 140:pos + 145]
 
-            if pop_num.find("'") != -1:
-                pop_num = pop_num[2:4]
+            pop_num = pop_num.translate(DD)
 
-            elif pop_num.find(">") != -1:
-                pop_num = pop_num[1:4]
+            try:
 
-            pop_num = int(pop_num)
+                pop_num = int(pop_num)
+
+            except ValueError:
+
+                pop_num = "down"
 
             worldDict[keys].append(pop_num)
 
@@ -77,10 +82,55 @@ def get_pops(last_position):
 
     return worldDict
 
+
+def get_html():  # gets the html sheet from the url given, converts it to a string
+    my_url = urllib.request.urlopen("http://oldschool.runescape.com/slu?order=WmpLA")
+    my_bytes = my_url.read()
+
+    my_str = my_bytes.decode("utf8")
+    my_url.close()
+
+    return my_str
+
+
+def add_pops(i):  # subtracts last known pop from current pop, then prints this for every world to show changes
+
+    j = 0
+
+    if i == 0:
+        for keys in sorted(worldDict.keys()):
+            if j < 6:
+                if worldDict[keys][i] == 'down':
+                    print(str(keys) + " :  n/a", end=" || ")
+                    j += 1
+                else:
+                    print(str(keys) + " : " + str("{:4d}".format(worldDict[keys][i])), end=" || ")
+                    j += 1
+            else:
+                if worldDict[keys][i] == 'down':
+                    print(str(keys) + " :  n/a", end="\n")
+                    j = 0
+                else:
+                    print(str(keys) + " : " + str("{:4d}".format(worldDict[keys][i])), end="\n")
+                    j = 0
+
+    else:
+        for keys in sorted(worldDict.keys()):
+            if j < 6:
+                if worldDict[keys][i] == 'down':
+                    print(str(keys) + " : n/a", end=" || ")
+                    j += 1
+                else:
+                    curr_change = worldDict[keys][i] - worldDict[keys][i - 1]
+                    print(str(keys) + " : " + str('{:+3d}'.format(curr_change)), end=" || ")
+                    j += 1
+            else:
+                if worldDict[keys][i] == 'down':
+                    print(str(keys) + " : n/a", end="\n")
+                    j = 0
+                else:
+                    curr_change = worldDict[keys][i] - worldDict[keys][i - 1]
+                    print(str(keys) + " : " + str('{:+3d}'.format(curr_change)), end="\n")
+                    j = 0
+
 main()
-
-
-
-
-
-
