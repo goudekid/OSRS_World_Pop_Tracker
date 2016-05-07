@@ -1,0 +1,86 @@
+import urllib.request
+import time
+
+worldDict = {}
+
+
+def main():
+
+    my_url = urllib.request.urlopen("http://oldschool.runescape.com/slu?order=WmpLA")
+    my_bytes = my_url.read()
+
+    my_str = my_bytes.decode("utf8")
+    my_url.close()
+
+    goto_worlds = my_str.find("<tbody class='server-list__body'>")
+
+    go_through_worlds(goto_worlds)
+
+    try:
+        while True:
+
+            get_pops(goto_worlds)
+
+            for keys in sorted(worldDict.keys()):
+                print(str(keys) + " | Pop: " + str(worldDict[keys]))
+
+            time.sleep(15)
+
+    except KeyboardInterrupt:
+        pass
+
+
+def go_through_worlds(last_position):
+
+    my_url = urllib.request.urlopen("http://oldschool.runescape.com/slu?order=WmpLA")
+    my_bytes = my_url.read()
+
+    my_str = my_bytes.decode("utf8")
+    my_url.close()
+
+    while my_str.find("world=", last_position) != -1:
+
+        pos = my_str.find("world=", last_position)
+        world_num = int(my_str[pos+6:pos+9])
+        worldDict[world_num] = []
+        last_position = pos + 10
+
+    return worldDict
+
+
+def get_pops(last_position):
+
+    my_url = urllib.request.urlopen("http://oldschool.runescape.com/slu?order=WmpLA")
+    my_bytes = my_url.read()
+
+    my_str = my_bytes.decode("utf8")
+    my_url.close()
+
+    while my_str.find(" players", last_position) != -1:
+
+        for keys in sorted(worldDict.keys()):
+
+            pos = my_str.find(" players", last_position)
+            pop_num = my_str[pos - 4:pos]
+
+            if pop_num.find("'") != -1:
+                pop_num = pop_num[2:4]
+
+            elif pop_num.find(">") != -1:
+                pop_num = pop_num[1:4]
+
+            pop_num = int(pop_num)
+
+            worldDict[keys].append(pop_num)
+
+            last_position = pos + 8
+
+    return worldDict
+
+main()
+
+
+
+
+
+
