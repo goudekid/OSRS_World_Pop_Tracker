@@ -99,7 +99,7 @@ def add_pops(i):  # subtracts last known pop from current pop, then prints this 
 
     if i == 0:
         for keys in sorted(worldDict.keys()):
-            if j < 6:
+            if j < 4:
                 if worldDict[keys][i] == 'down':
                     print(str(keys) + " :  n/a", end=" || ")
                     j += 1
@@ -116,7 +116,7 @@ def add_pops(i):  # subtracts last known pop from current pop, then prints this 
 
     else:
         for keys in sorted(worldDict.keys()):
-            if j < 6:
+            if j < 4:
                 if worldDict[keys][i] == 'down':
                     print(str(keys) + " : n/a", end=" || ")
                     j += 1
